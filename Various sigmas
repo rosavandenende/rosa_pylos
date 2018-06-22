@@ -1,0 +1,68 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jun 14 09:39:14 2018
+
+@author: chip
+"""
+#in this docoment: plotting the number of triggers for various sigmas: 5,6,7,8,9
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import numpy as np
+
+def files():
+    file = open("0 5 59 56789sigma and triggered",'r')
+    lines = file.readlines()
+    sigma = lines[0]
+    trigger5 = lines[1]
+    trigger6 = lines[2]
+    trigger7 = lines[3]
+    trigger8 = lines[4]
+    trigger9 = lines[5]
+    
+    
+    sigma_list = sigma.split()
+    trigger5_list = np.array(trigger5.split()).astype(np.float)
+    trigger6_list = np.array(trigger6.split()).astype(np.float)
+    trigger7_list = np.array(trigger7.split()).astype(np.float)
+    trigger8_list = np.array(trigger8.split()).astype(np.float)
+    trigger9_list = np.array(trigger9.split()).astype(np.float)
+#    
+#    print len(sigma_list)
+#    print len(trigger7_list)
+#
+#    plt.plot(range(0,295),trigger5_list,'blue')
+#    plt.plot(range(0,295),trigger6_list,'purple')
+#    plt.plot(range(0,295),trigger7_list,'red')
+#    plt.plot(range(0,295),trigger8_list,'orange')
+#    plt.plot(range(0,295),trigger9_list,'green')
+#    
+#    plt.xlabel('Sample number')
+#    plt.ylabel('Number of triggers')
+#    
+#    blue_patch = patches.Patch(color = 'blue',label = '$5\sigma$')
+#    purple_patch = patches.Patch(color = 'purple',label = '$6\sigma$')
+#    red_patch = patches.Patch(color = 'red',label = '$7\sigma$')
+#    orange_patch = patches.Patch(color = 'orange',label = '$8\sigma$')
+#    green_patch = patches.Patch(color = 'green',label = '$9\sigma$')
+#    plt.legend(handles = [blue_patch,purple_patch, red_patch,orange_patch, green_patch])
+#    plt.show()
+
+    trigger5_tot = np.sum(trigger5_list)
+    trigger6_tot = np.sum(trigger6_list)
+    trigger7_tot = np.sum(trigger7_list)
+    trigger8_tot = np.sum(trigger8_list)
+    trigger9_tot = np.sum(trigger9_list)
+    
+
+
+    y = [trigger5_tot,trigger6_tot,trigger7_tot,trigger8_tot,trigger9_tot]
+    x = range(5)
+    x_label = ['$5\sigma$', '$6\sigma$','$7\sigma$','$8\sigma$','$9\sigma$']
+#    x = [str($5\sigma$),str($6\sigma$),str($7\sigma$),str($8\sigma$),str($9\sigma$)]
+    plt.bar(x,y,width = 0.5)
+    plt.ylabel('Number of triggers')
+    plt.xticks(x,x_label)
+    
+    plt.show()
+files()

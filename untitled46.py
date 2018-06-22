@@ -1,0 +1,98 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jun 18 09:49:33 2018
+
+@author: chip
+"""
+
+#in this file: plotting sigma trig for 50-80
+
+
+import matplotlib.pyplot as plt
+import numpy.fft as fft
+import numpy as np
+from datetime import datetime, timedelta
+from matplotlib.dates import date2num
+import matplotlib.dates as mdates
+#from datetime import datetime, timedelta,num2date
+#import matplotlib.dates as mdates
+#import pandas as pd 
+
+
+#def daterange():
+#    return pd.date_range("29/01/2018 09:00:02",periods = 2950, freq = "2min")
+
+
+
+def daterange():
+    dateandtime_list = []
+    deltatime = timedelta(minutes =2)
+    dateandtime = datetime(year=2018,month=2,day=2,hour=12,minute=59,second=9)
+    for i in range(0,59*30):
+        dateandtime += deltatime
+        dateandtime_list.append(dateandtime)
+    print len(dateandtime_list)
+    dateandtime_list = date2num(dateandtime_list) 
+    print len(dateandtime_list),'r'
+    return dateandtime_list
+#daterange = range(0,2950)
+
+
+def files():
+    file = open("50 80 59 sigma and triggered",'r')
+    lines = file.readlines()
+    sigma = lines[0]
+    trigger = lines[1]
+    sigma_list = sigma.split()
+    trigger_list = trigger.split()
+    print len(sigma_list)
+    print len(trigger_list)
+    return sigma_list, trigger_list
+
+
+def plotsigmatrig():        
+    plt.rcParams["figure.figsize"] = [24,14]
+    fig, ax = plt.subplots(2,1,sharex = False)
+    ax[0].plot(daterange(),files()[0],linewidth = 0.5)
+    ax[0].set_xlabel("Date (d-m-y h:min)")
+    ax[0].set_ylabel("Noise level, 5$\sigma$")
+#    ax[0].xaxis_date()
+#    ax[0].set_xlim(pd.Timestamp("2018-01-29"),pd.Timestamp("2018-02-03"))
+#    ax[0].set_xlim(pd.Timestamp("2018-01-29"),pd.Timestamp("2018-02-03"))
+    xfmt = mdates.DateFormatter("%d-%m-%y %H:%M")
+    ax[0].xaxis.set_major_formatter(xfmt)    
+    
+    ax[1].plot(daterange(),files()[1],linewidth = 0.5)
+    ax[1].set_xlabel("Date (d-m-y h:min)")
+    ax[1].set_ylabel("Number of triggers")
+#    ax[1].xaxis_date()
+#    ax[1].set_xlim(pd.Timestamp("2018-01-29"),pd.Timestamp("2018-02-03"))
+#    ax[1].set_xlim(pd.Timestamp("2018-01-29"),pd.Timestamp("2018-02-03"))
+    xfmt = mdates.DateFormatter("%d-%m-%y %H:%M")
+    ax[1].xaxis.set_major_formatter(xfmt)
+
+    plt.show()
+
+
+def PSD_using_numpy(ampl, fs):
+    spectrum = fft.fft(ampl)
+    PSD = np.abs(spectrum)**2 * (2./(fs*len(spectrum)))
+    freq = fft.fftfreq(len(spectrum),d=1./fs)
+    plt.loglog(freq,PSD)
+    plt.show()
+    return freq, PSD
+
+
+
+def triggerPSD():
+    triggers = files()[1]
+#    triggers = np.array(triggers).astype(np.float)
+#    print np.mean(triggers)
+    ftrig,spectrig = PSD_using_numpy(triggers,144000)
+    plt.loglog(ftrig,spectrig)
+    plt.xlabel("Frequency [Hz]")
+    plt.ylabel("PSD")
+    plt.show()
+    
+triggerPSD()

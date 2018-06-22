@@ -1,0 +1,126 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jun 13 10:24:59 2018
+
+@author: chip
+"""
+#in this document: matched filter!
+
+
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy.fft as fft
+from scipy import signal
+import wave, struct
+from scipy.signal import butter,lfilter
+
+def butter_lowpass(cutoff, sampling_rate, order=5):
+    nyq = 0.5 * sampling_rate
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    return b, a
+
+def butter_lowpass_filter(data, cutoff, sampling_rate, order=5):
+    b, a = butter_lowpass(cutoff, sampling_rate, order=order)
+    y = lfilter(b, a, data)
+    return y
+
+def butter_highpass(cutoff, sampling_rate, order=5):
+    nyq = 0.5 * sampling_rate
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='high', analog=False)
+    return b, a
+
+def butter_highpass_filter(data, cutoff, sampling_rate, order=5):
+    b, a = butter_highpass(cutoff, sampling_rate, order=order)
+    y = lfilter(b, a, data)
+    return y
+
+def butter_bandpass(lowcut, highcut, sampling_rate, order=5):
+    nyq = 0.5 * sampling_rate
+    low = lowcut/nyq
+    high = highcut/nyq
+    b, a = butter(order, [low, high], btype='band', analog=False)
+    return b, a
+
+def butter_bandpass_filter(data, lowcut, highcut, sampling_rate, order=5):
+    y = butter_lowpass_filter(data, highcut, sampling_rate, order)
+    return butter_highpass_filter(y, lowcut, sampling_rate, order)
+
+def PSD_using_numpy(ampl, fs):
+    spectrum = fft.fft(ampl)
+    PSD = np.abs(spectrum)**2 * (2./(fs*len(spectrum)))
+    freq = fft.fftfreq(len(spectrum),d=1./fs)
+    return freq, PSD
+
+def main(a,b,filename):
+    
+    time_series = []
+    bip = 0.1*np.array([ -1.7513e-37, -3.37337e-35, -4.04037e-41, 2.50476e-30, 9.65528e-28, 2.21075e-25, 3.54893e-23, 4.18286e-21, 3.66047e-19, 2.3519e-17, 1.05946e-15, 2.83482e-14, 3.14432e-21, -4.06164e-11, -2.17489e-09, -6.91748e-08, -1.54256e-06, -2.52555e-05, -0.000307013, -0.00274015, -0.0171466, -0.0637317, -4.90981e-10, 1.762, 13.1062, 57.9064, 179.374, 407.952, 688.885, 854.087, 742.406, 383.316, -0, -204.494, -211.296, -129.681, -55.8014, -17.6292, -4.1353, -0.712197, -0.0859956, -0.00616778, 9.1688e-13, 6.34932e-05, 9.11326e-06, 7.76956e-07, 4.64411e-08, 2.03811e-09, 6.64108e-11, 1.5888e-12, 2.6649e-14, 2.65504e-16, -1.09653e-26, -5.27405e-20, -1.05154e-21, -1.24534e-23, -1.03402e-25, -6.30365e-28, -2.85325e-30, -9.48216e-33, -2.20931e-35, -3.05762e-38, 2.63126e-49, 1.17201e-43 ])
+    print len(bip)
+    Fs = 1/(4e-6)
+#    t = np.linspace(0, len(bip)/Fs, len(bip))
+    freq, freq_data = PSD_using_numpy(bip, Fs)
+
+    Fs_resampled = 144000.
+    number_resampled = int(round(len(bip)*Fs_resampled/Fs))
+    bip_resampled = signal.resample(bip, number_resampled)
+#    t_resampled = np.linspace(0, len(bip_resampled)/Fs_resampled, len(bip_resampled)) 
+    freq_resampled, freq_data_resampled = PSD_using_numpy(bip_resampled, Fs_resampled)
+    print (len(bip_resampled))
+#    sig = np.tile(bip_resampled, 10)
+#    sig = np.zeros(1000)
+#    sig = np.insert(sig, 300, bip_resampled)
+#    sig_noise = sig + 0.2* bip_resampled.max()* np.random.randn(len(sig)) #dit moet echte data zijn...
+    
+    waveFile = wave.open(filename,"r")
+    for i in range(a,b):
+        waveFile.setpos(i)
+        waveData = waveFile.readframes(1)
+        sample_point = struct.unpack('<h',waveData)
+        time_series.append(sample_point[0])
+
+    sig_noise = butter_bandpass_filter(time_series,1e3,40e3,144000,order = 5)
+#    sig_noise = np.insert(sig_noise,2000,bip_resampled)               
+    print (sig_noise)
+    
+    
+    plt.subplot(311)
+#    plt.plot(t, bip)
+#    plt.plot(t_resampled, bip_resampled, '--', c='red')
+    plt.subplots_adjust(hspace=0.6)
+    plt.plot(bip_resampled, '--')
+    plt.xlabel("Sample number")
+    plt.ylabel("ADC")
+#    plt.text(0,500,'Resampled bipolar signal')
+#
+#    plt.subplot(412)
+##    plt.plot(freq, freq_data)
+#    plt.plot(freq_resampled, freq_data_resampled, '--', c='red')
+##    plt.text(-70000,1, 'Resampled PSD')
+    plt.subplots_adjust(hspace=0.6)
+    plt.subplot(312)
+    plt.plot(sig_noise,linewidth = 0.5)
+#    plt.text(0,500,'Noise incl signal')
+    plt.xlabel("Sample number")
+    plt.ylabel("ADC")
+    fir_coefficients = bip_resampled[22:12:-1]
+    det = signal.lfilter(fir_coefficients, 1, sig_noise)
+    det = det*det
+    
+    plt.subplot(313)
+    plt.plot(det,linewidth = 0.5)
+    plt.xlabel("Sample number")
+    plt.ylabel("ADC")
+    plt.subplots_adjust(hspace = 0.4)
+    plt.text(0,1.5e12,'Correlation')
+    plt.show()
+
+#import sys
+#if __name__ == "__main__":
+#    sys.exit(main())
+
+main(30000,40000, "/media/My Passport/Pylos_data/Py1-201650198/201650198.180129090002.wav")
